@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Dual Zone Ad System</title>
+
+<!-- Monetag SDK -->
+<script src='//libtl.com/sdk.js' data-zone='10748848' data-sdk='show_10748848'></script>
+<script src='//libtl.com/sdk.js' data-zone='10748853' data-sdk='show_10748853'></script>
+
+<style>
+:root {
+    --primary: #00c853;
+    --secondary: #ff6d00;
+    --card-bg: #1f1f1f;
+    --darker: #0a0a0a;
+    --light: #f5f5f5;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
+body{background:linear-gradient(135deg,var(--darker),#1a1a2e);color:var(--light);min-height:100vh;display:flex;justify-content:center;align-items:center;}
+.container{width:100%;max-width:500px;background:var(--card-bg);border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
+.header{background:linear-gradient(90deg,var(--primary),var(--secondary));padding:25px;text-align:center;}
+.content{padding:25px;}
+.stat-card{background:rgba(255,255,255,0.05);border-radius:15px;padding:15px;margin:10px 0;text-align:center;}
+.value{font-size:24px;font-weight:bold;color:var(--primary);}
+.buttons button{width:100%;padding:15px;margin:10px 0;border:none;border-radius:10px;font-size:16px;cursor:pointer;color:white;}
+.btn-3d{background:var(--primary);}
+.btn-secondary{background:var(--secondary);}
+.ad-notification{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:black;padding:15px 25px;border-radius:10px;display:none;z-index:1000;}
+</style>
+</head>
+<body>
+
+<div class="ad-notification" id="ad-notification"></div>
+
+<div class="container">
+<div class="header"><h1>Advanced Dual Zone Ad System</h1></div>
+<div class="content">
+
+<div class="stat-card">Watched Ads<div class="value" id="watched-ads">0</div></div>
+<div class="stat-card">Earned Points<div class="value" id="earned-points">0.00</div></div>
+
+<div class="buttons">
+<button class="btn-3d" onclick="manualWatchAd()">Watch Ad (+0.50)</button>
+<button class="btn-3d btn-secondary" id="auto-ad-btn" onclick="startAutoAds()">Auto Show Ads</button>
+<button class="btn-3d" onclick="stopAutoAds()">Stop Auto Ads</button>
+</div>
+
+</div></div>
+
+<script>
+const POINTS_PER_AD = 0.5;
+let watchedAdsCount = 0;
+let earnedPoints = 0;
+let autoAdInterval = null;
+let currentZone = 1; // 1 = 10748848, 2 = 10748853
+
+const watchedAdsEl = document.getElementById('watched-ads');
+const earnedPointsEl = document.getElementById('earned-points');
+const adNotificationEl = document.getElementById('ad-notification');
+
+function updateUI(){
+watchedAdsEl.textContent = watchedAdsCount;
+earnedPointsEl.textContent = earnedPoints.toFixed(2);
+}
+
+function showAdNotification(msg){
+adNotificationEl.textContent = msg;
+adNotificationEl.style.display = 'block';
+setTimeout(()=>{adNotificationEl.style.display='none';},3000);
+}
+
+// Function to show ad for a given zone
+function showAdForZone(zone){
+return new Promise((resolve,reject)=>{
+    if(zone===1 && typeof show_10748848==='function'){
+        show_10748848().then(resolve).catch(reject);
+    }else if(zone===2 && typeof show_10748853==='function'){
+        show_10748853().then(resolve).catch(reject);
+    }else{
+        reject();
+    }
+});
+}
+
+// Dual zone watch ad
+function watchAd(){
+showAdNotification("Loading ad...");
+let zoneToShow = currentZone;
+showAdForZone(zoneToShow).then(()=>{
+    watchedAdsCount++;
+    earnedPoints += POINTS_PER_AD;
+    updateUI();
+    showAdNotification("Ad completed! +0.50 added");
+}).catch(()=>{
+    // Try alternate zone if first fails
+    let altZone = (currentZone===1)?2:1;
+    showAdForZone(altZone).then(()=>{
+        watchedAdsCount++;
+        earnedPoints += POINTS_PER_AD;
+        updateUI();
+        showAdNotification("Ad completed! +0.50 added");
+    }).catch(()=>{
+        showAdNotification("Ad not available");
+    });
+});
+// Rotate zone for next auto ad
+currentZone = (currentZone===1)?2:1;
+}
+
+// Manual Watch Ad button
+function manualWatchAd(){
+watchAd();
+}
+
+// Auto Ads
+function startAutoAds(){
+if(autoAdInterval) return;
+autoAdInterval = setInterval(watchAd,20000); // 20 seconds
+document.getElementById('auto-ad-btn').textContent="Auto Ads Running...";
+}
+
+// Stop Auto Ads
+function stopAutoAds(){
+clearInterval(autoAdInterval);
+autoAdInterval=null;
+document.getElementById('auto-ad-btn').textContent="Auto Show Ads";
+}
+</script>
+
+</body>
+</html>
